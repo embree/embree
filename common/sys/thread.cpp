@@ -6,7 +6,11 @@
 #include "string.h"
 
 #include <iostream>
+#if defined(__ARM_NEON)
+#include "../simd/arm/emulation.h"
+#else
 #include <xmmintrin.h>
+#endif
 
 #if defined(PTHREADS_WIN32)
 #pragma comment (lib, "pthreadVC.lib")

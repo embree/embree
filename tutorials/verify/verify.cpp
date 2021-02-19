@@ -8,6 +8,7 @@
 #include "../common/scenegraph/geometry_creation.h"
 #include "../common/math/closest_point.h"
 #include "../../common/algorithms/parallel_for.h"
+#include "../../common/simd/simd.h"
 #include "../../kernels/common/context.h"
 #include "../../kernels/common/geometry.h"
 #include "../../kernels/common/scene.h"
@@ -654,7 +655,7 @@ namespace embree
     
     std::atomic<int> passed(true);
 
-#if defined(__WIN32__) && !defined(__X86_64__)
+#if defined(__WIN32__) && !defined(__64BIT__)
 	/* deactivating parallel test execution on win32 platforms due to out-of-memory exceptions */
 	parallel = false;
 #endif

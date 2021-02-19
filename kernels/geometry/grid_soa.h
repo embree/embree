@@ -41,7 +41,7 @@ namespace embree
         }
         const size_t gridBytes = 4*size_t(width)*size_t(height)*sizeof(float);  
         size_t rootBytes = time_steps*sizeof(BVH4::NodeRef);
-#if !defined(__X86_64__)
+#if !defined(__64BIT__)
         rootBytes += 4; // We read 2 elements behind the grid. As we store at least 8 root bytes after the grid we are fine in 64 bit mode. But in 32 bit mode we have to do additional padding.
 #endif
         void* data = alloc(offsetof(GridSOA,data)+bvhBytes+time_steps*gridBytes+rootBytes);
@@ -253,7 +253,7 @@ namespace embree
 
     public:
       BVH4::NodeRef troot;
-#if !defined(__X86_64__)
+#if !defined(__64BIT__)
       unsigned align1;
 #endif
       unsigned time_steps;

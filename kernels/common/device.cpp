@@ -66,6 +66,7 @@ namespace embree
     case CPU::CORE1:           frequency_level = FREQUENCY_SIMD128; break;
     case CPU::XEON_PHI_KNIGHTS_MILL   : frequency_level = FREQUENCY_SIMD512; break;
     case CPU::XEON_PHI_KNIGHTS_LANDING: frequency_level = FREQUENCY_SIMD512; break;
+    case CPU::ARM:             frequency_level = FREQUENCY_SIMD128; break;
     }
 
     /* initialize global state */

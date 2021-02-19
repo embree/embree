@@ -83,6 +83,7 @@ namespace embree
     NEHALEM,
     CORE2,
     CORE1,
+    ARM,
     UNKNOWN,
   };
   
