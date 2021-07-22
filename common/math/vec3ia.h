@@ -65,7 +65,9 @@ namespace embree
 
   __forceinline Vec3ia operator +( const Vec3ia& a ) { return a; }
   __forceinline Vec3ia operator -( const Vec3ia& a ) { return _mm_sub_epi32(_mm_setzero_si128(), a.m128); }
-#if defined(__SSSE3__)
+#if (defined(__aarch64__)) 
+  __forceinline Vec3ia abs       ( const Vec3ia& a ) { return vabsq_s32(a.m128); }
+#elif defined(__SSSE3__)
   __forceinline Vec3ia abs       ( const Vec3ia& a ) { return _mm_abs_epi32(a.m128); }
 #endif
 
@@ -81,7 +83,7 @@ namespace embree
   __forceinline Vec3ia operator -( const Vec3ia& a, const int     b ) { return a-Vec3ia(b); }
   __forceinline Vec3ia operator -( const int     a, const Vec3ia& b ) { return Vec3ia(a)-b; }
 
-#if defined(__SSE4_1__)
+#if defined(__aarch64__) || defined(__SSE4_1__)
   __forceinline Vec3ia operator *( const Vec3ia& a, const Vec3ia& b ) { return _mm_mullo_epi32(a.m128, b.m128); }
   __forceinline Vec3ia operator *( const Vec3ia& a, const int     b ) { return a * Vec3ia(b); }
   __forceinline Vec3ia operator *( const int     a, const Vec3ia& b ) { return Vec3ia(a) * b; }
@@ -133,12 +135,30 @@ namespace embree
   ////////////////////////////////////////////////////////////////////////////////
   /// Reductions
   ////////////////////////////////////////////////////////////////////////////////
-
+#if defined(__aarch64__)
+  __forceinline int reduce_add(const Vec3ia& v) {
+    int32x4_t t = v.m128;
+    t[3] = 0;
+    return vaddvq_s32(t);
+        
+  }
+  __forceinline int reduce_mul(const Vec3ia& v) { return v.x*v.y*v.z; }
+  __forceinline int reduce_min(const Vec3ia& v) {
+    int32x4_t t = (__m128i)blendv_ps((__m128)v0x7fffffff, (__m128)v.m128, (__m128)vFFF0);
+    return vminvq_s32(t);
+        
+  }
+  __forceinline int reduce_max(const Vec3ia& v) {
+    int32x4_t t = (__m128i)blendv_ps((__m128)v0x80000000, (__m128)v.m128, (__m128)vFFF0);
+    return vmaxvq_s32(t);
+        
+  }
+#else
   __forceinline int reduce_add(const Vec3ia& v) { return v.x+v.y+v.z; }
   __forceinline int reduce_mul(const Vec3ia& v) { return v.x*v.y*v.z; }
   __forceinline int reduce_min(const Vec3ia& v) { return min(v.x,v.y,v.z); }
   __forceinline int reduce_max(const Vec3ia& v) { return max(v.x,v.y,v.z); }
-
+#endif
   ////////////////////////////////////////////////////////////////////////////////
   /// Comparison Operators
   ////////////////////////////////////////////////////////////////////////////////

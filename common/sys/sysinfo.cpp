@@ -336,8 +336,29 @@ namespace embree
 
     return cpu_features;
 #elif defined(__ARM_NEON)
-    /* emulated features with sse2neon */
+    
+#if defined(NEON_AVX2_EMULATION)
+     int cpu_features = CPU_FEATURE_NEON|CPU_FEATURE_SSE|CPU_FEATURE_SSE2;
+      cpu_features |= CPU_FEATURE_SSE3|CPU_FEATURE_SSSE3|CPU_FEATURE_SSE42;
+      cpu_features |= CPU_FEATURE_XMM_ENABLED;
+      cpu_features |= CPU_FEATURE_YMM_ENABLED;
+      cpu_features |= CPU_FEATURE_SSE41 | CPU_FEATURE_RDRAND | CPU_FEATURE_F16C;
+      cpu_features |= CPU_FEATURE_POPCNT;
+      cpu_features |= CPU_FEATURE_AVX;
+      cpu_features |= CPU_FEATURE_AVX2;
+      cpu_features |= CPU_FEATURE_FMA3;
+      cpu_features |= CPU_FEATURE_LZCNT;
+      cpu_features |= CPU_FEATURE_BMI1;
+      cpu_features |= CPU_FEATURE_BMI2;
+      cpu_features |= CPU_FEATURE_NEON_2X;
+
+      return cpu_features;
+#else 
+	/* emulated features with sse2neon */
     return CPU_FEATURE_SSE|CPU_FEATURE_SSE2|CPU_FEATURE_XMM_ENABLED;
+ 
+#endif // NEON_AVX2_EMULATION
+    
 #else
     /* Unknown CPU. */
     return 0;
@@ -374,6 +395,8 @@ namespace embree
     if (features & CPU_FEATURE_AVX512VL) str += "AVX512VL ";
     if (features & CPU_FEATURE_AVX512IFMA) str += "AVX512IFMA ";
     if (features & CPU_FEATURE_AVX512VBMI) str += "AVX512VBMI ";
+    if (features & CPU_FEATURE_NEON) str += "NEON ";
+    if (features & CPU_FEATURE_NEON_2X) str += "2xNEON ";
     return str;
   }
   
@@ -388,6 +411,9 @@ namespace embree
     if (isa == AVX) return "AVX";
     if (isa == AVX2) return "AVX2";
     if (isa == AVX512) return "AVX512";
+
+    if (isa == NEON) return "NEON";    
+    if (isa == NEON_2X) return "2xNEON";
     return "UNKNOWN";
   }
 
@@ -408,6 +434,9 @@ namespace embree
     if (hasISA(features,AVXI)) v += "AVXI ";
     if (hasISA(features,AVX2)) v += "AVX2 ";
     if (hasISA(features,AVX512)) v += "AVX512 ";
+
+    if (hasISA(features,NEON)) v += "NEON ";
+    if (hasISA(features,NEON_2X)) v += "2xNEON ";
     return v;
   }
 }

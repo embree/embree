@@ -117,8 +117,20 @@ namespace embree
     }
 #endif
 
-#if defined(__SSE4_1__)
-    static __forceinline vfloat4 load(const unsigned char* ptr) {
+#if defined(__aarch64__)
+    static __forceinline vfloat4 _mm_load4epu8_f32(__m128i *ptr)
+    {
+        uint8x8_t   t0 = vld1_u8((uint8_t*)ptr);
+        uint16x8_t  t1 = vmovl_u8(t0);
+        uint32x4_t  t2 = vmovl_u16(vget_low_u16(t1));
+        return vreinterpretq_f32_u32(t2);
+    }
+    
+    static __forceinline vfloat4 load(const uint8_t* ptr) {
+        return __m128(_mm_load4epu8_f32(((__m128i*)ptr)));
+    }
+#elif defined(__SSE4_1__)
+    static __forceinline vfloat4 load(const uint8_t* ptr) {
       return _mm_cvtepi32_ps(_mm_cvtepu8_epi32(_mm_loadu_si128((__m128i*)ptr)));
     }
 #else
@@ -128,7 +140,18 @@ namespace embree
     }
 #endif
 
-#if defined(__SSE4_1__)
+#if defined(__aarch64__)
+    static __forceinline vfloat4 _mm_load4epi16_f32(__m128i *ptr)
+    {
+        int16x8_t   t0 = vld1q_s16((int16_t*)ptr);
+        int32x4_t   t1 = vmovl_s16(vget_low_s16(t0));
+        float32x4_t t2 = vcvtq_f32_s32(t1);
+	return t2;
+    }    
+    static __forceinline vfloat4 load(const short* ptr) {
+        return __m128(_mm_load4epi16_f32(((__m128i*)ptr)));
+    }
+#elif defined(__SSE4_1__)
     static __forceinline vfloat4 load(const short* ptr) {
       return _mm_cvtepi32_ps(_mm_cvtepi16_epi32(_mm_loadu_si128((__m128i*)ptr)));
     }
@@ -153,7 +176,7 @@ namespace embree
 
     template<int scale = 4>
     static __forceinline vfloat4 gather(const float* ptr, const vint4& index) {
-#if defined(__AVX2__)
+#if defined(__AVX2__) && !defined(__aarch64__)
       return _mm_i32gather_ps(ptr, index, scale);
 #else
       return vfloat4(
@@ -169,7 +192,7 @@ namespace embree
       vfloat4 r = zero;
 #if defined(__AVX512VL__)
       return _mm_mmask_i32gather_ps(r, mask, index, ptr, scale);
-#elif defined(__AVX2__)
+#elif defined(__AVX2__)  && !defined(__aarch64__)
       return _mm_mask_i32gather_ps(r, ptr, index, mask, scale);
 #else
       if (likely(mask[0])) r[0] = *(float*)(((char*)ptr)+scale*index[0]);
@@ -506,10 +529,10 @@ namespace embree
   ////////////////////////////////////////////////////////////////////////////////
 
 #if defined(__aarch64__)
-  __forceinline vfloat4 floor(const vfloat4& a) { return vrndmq_f32(a.v); }
-  __forceinline vfloat4 ceil (const vfloat4& a) { return vrndpq_f32(a.v); }
-  __forceinline vfloat4 trunc(const vfloat4& a) { return vrndq_f32(a.v); }
-  __forceinline vfloat4 round(const vfloat4& a) { return vrndnq_f32(a.v); }
+  __forceinline vfloat4 floor(const vfloat4& a) { return vrndmq_f32(a.v); } // towards -inf
+  __forceinline vfloat4 ceil (const vfloat4& a) { return vrndpq_f32(a.v); } // toward +inf
+  __forceinline vfloat4 trunc(const vfloat4& a) { return vrndq_f32(a.v); } // towards 0
+  __forceinline vfloat4 round(const vfloat4& a) { return vrndnq_f32(a.v); } // to nearest, ties to even. NOTE(LTE): arm clang uses vrndnq, old gcc uses vrndqn?
 #elif defined (__SSE4_1__)
   __forceinline vfloat4 floor(const vfloat4& a) { return _mm_round_ps(a, _MM_FROUND_TO_NEG_INF    ); }
   __forceinline vfloat4 ceil (const vfloat4& a) { return _mm_round_ps(a, _MM_FROUND_TO_POS_INF    ); }
@@ -524,7 +547,9 @@ namespace embree
   __forceinline vfloat4 frac(const vfloat4& a) { return a-floor(a); }
 
   __forceinline vint4 floori(const vfloat4& a) {
-#if defined(__SSE4_1__)
+#if defined(__aarch64__)
+    return vcvtq_s32_f32(floor(a));
+#elif defined(__SSE4_1__)
     return vint4(floor(a));
 #else
     return vint4(a-vfloat4(0.5f));
@@ -538,6 +563,16 @@ namespace embree
   __forceinline vfloat4 unpacklo(const vfloat4& a, const vfloat4& b) { return _mm_unpacklo_ps(a, b); }
   __forceinline vfloat4 unpackhi(const vfloat4& a, const vfloat4& b) { return _mm_unpackhi_ps(a, b); }
 
+#if defined(__aarch64__)
+      template<int i0, int i1, int i2, int i3>
+      __forceinline vfloat4 shuffle(const vfloat4& v) {
+          return vreinterpretq_f32_u8(vqtbl1q_u8( (uint8x16_t)v.v, _MN_SHUFFLE(i0, i1, i2, i3)));
+      }
+      template<int i0, int i1, int i2, int i3>
+      __forceinline vfloat4 shuffle(const vfloat4& a, const vfloat4& b) {
+          return vreinterpretq_f32_u8(vqtbl2q_u8( (uint8x16x2_t){(uint8x16_t)a.v, (uint8x16_t)b.v}, _MF_SHUFFLE(i0, i1, i2, i3)));
+      }
+#else
   template<int i0, int i1, int i2, int i3>
   __forceinline vfloat4 shuffle(const vfloat4& v) {
     return _mm_castsi128_ps(_mm_shuffle_epi32(_mm_castps_si128(v), _MM_SHUFFLE(i3, i2, i1, i0)));
@@ -547,6 +582,7 @@ namespace embree
   __forceinline vfloat4 shuffle(const vfloat4& a, const vfloat4& b) {
     return _mm_shuffle_ps(a, b, _MM_SHUFFLE(i3, i2, i1, i0));
   }
+#endif
 
 #if defined(__SSE3__)
   template<> __forceinline vfloat4 shuffle<0, 0, 2, 2>(const vfloat4& v) { return _mm_moveldup_ps(v); }
@@ -562,7 +598,33 @@ namespace embree
   template<int i> __forceinline float extract   (const vfloat4& a) { return _mm_cvtss_f32(shuffle<i>(a)); }
   template<>      __forceinline float extract<0>(const vfloat4& a) { return _mm_cvtss_f32(a); }
 
-#if defined (__SSE4_1__)
+#if defined(__aarch64__)
+  template<int dst>  __forceinline vfloat4 insert(const vfloat4& a, float b);
+  template<> __forceinline vfloat4 insert<0>(const vfloat4& a, float b)
+  {
+        vfloat4 c = a;
+        c[0] = b;
+        return c;
+  }
+  template<> __forceinline vfloat4 insert<1>(const vfloat4& a, float b)
+  {
+        vfloat4 c = a;
+        c[1] = b;
+        return c;
+  }
+  template<> __forceinline vfloat4 insert<2>(const vfloat4& a, float b)
+  {
+        vfloat4 c = a;
+        c[2] = b;
+        return c;
+  }
+  template<> __forceinline vfloat4 insert<3>(const vfloat4& a, float b)
+  {
+        vfloat4 c = a;
+        c[3] = b;
+        return c;
+  }
+#elif defined (__SSE4_1__)
   template<int dst, int src, int clr> __forceinline vfloat4 insert(const vfloat4& a, const vfloat4& b) { return _mm_insert_ps(a, b, (dst << 4) | (src << 6) | clr); }
   template<int dst, int src> __forceinline vfloat4 insert(const vfloat4& a, const vfloat4& b) { return insert<dst, src, 0>(a, b); }
   template<int dst> __forceinline vfloat4 insert(const vfloat4& a, const float b) { return insert<dst, 0>(a, _mm_set_ss(b)); }

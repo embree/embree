@@ -62,7 +62,7 @@ namespace embree
 
       Vec3fa org_xyz, dir_xyz;
       Vec3vf<N> org, dir, rdir;
-#if defined(__AVX2__) || defined(__ARM_NEON)
+#if defined(__AVX2__) || defined(__ARM_NEON) || defined(__aarch64__)
       Vec3vf<N> org_rdir;
 #endif
       size_t nearX, nearY, nearZ;

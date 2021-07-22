@@ -266,7 +266,7 @@ namespace embree
 /// SSE / AVX / MIC specializations
 ////////////////////////////////////////////////////////////////////////////////
 
-#if defined __SSE__
+#if defined(__SSE__) || defined(__ARM_NEON)
 #include "../simd/sse.h"
 #endif
 
@@ -291,14 +291,14 @@ namespace embree
   template<> __forceinline Vec3<vfloat4>::Vec3(const Vec3fa& a) {
     x = a.x; y = a.y; z = a.z;
   }
-#elif defined(__SSE__)
+#elif defined(__SSE__) || defined(__ARM_NEON)
   template<>
   __forceinline Vec3<vfloat4>::Vec3(const Vec3fa& a) {
     const vfloat4 v = vfloat4(a.m128); x = shuffle<0,0,0,0>(v); y = shuffle<1,1,1,1>(v); z = shuffle<2,2,2,2>(v);
   }
 #endif
 
-#if defined(__SSE__)
+#if defined(__SSE__) || defined(__ARM_NEON)
   template<>
   __forceinline Vec3<vfloat4> broadcast<vfloat4,vfloat4>(const Vec3<vfloat4>& a, const size_t k) {
     return Vec3<vfloat4>(vfloat4::broadcast(&a.x[k]), vfloat4::broadcast(&a.y[k]), vfloat4::broadcast(&a.z[k]));

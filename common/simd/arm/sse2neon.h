@@ -155,6 +155,14 @@
  * argument "a" of mm_shuffle_ps that will be places in fp1 of result.
  * fp0 is the same for fp0 of result.
  */
+#if defined(__aarch64__)
+#define _MN_SHUFFLE(fp3,fp2,fp1,fp0) ( (uint8x16_t){ (((fp3)*4)+0), (((fp3)*4)+1), (((fp3)*4)+2), (((fp3)*4)+3),  (((fp2)*4)+0), (((fp2)*4)+1), (((fp2)*4)+\
+2), (((fp2)*4)+3),  (((fp1)*4)+0), (((fp1)*4)+1), (((fp1)*4)+2), (((fp1)*4)+3),  (((fp0)*4)+0), (((fp0)*4)+1), (((fp0)*4)+2), (((fp0)*4)+3) } )
+#define _MF_SHUFFLE(fp3,fp2,fp1,fp0) ( (uint8x16_t){ (((fp3)*4)+0), (((fp3)*4)+1), (((fp3)*4)+2), (((fp3)*4)+3),  (((fp2)*4)+0), (((fp2)*4)+1), (((fp2)*4)+\
+2), (((fp2)*4)+3),  (((fp1)*4)+16+0), (((fp1)*4)+16+1), (((fp1)*4)+16+2), (((fp1)*4)+16+3),  (((fp0)*4)+16+0), (((fp0)*4)+16+1), (((fp0)*4)+16+2), (((fp0)*\
+4)+16+3) } )
+#endif
+
 #define _MM_SHUFFLE(fp3, fp2, fp1, fp0) \
     (((fp3) << 6) | ((fp2) << 4) | ((fp1) << 2) | ((fp0)))
 
@@ -186,10 +194,11 @@ typedef float32x4_t __m128; /* 128-bit vector containing 4 floats */
 // intrinsic conversion.
 #if defined(__aarch64__)
 typedef float64x2_t __m128d; /* 128-bit vector containing 2 doubles */
+typedef int32x4_t   __m128i;
 #else
 typedef float32x4_t __m128d;
-#endif
 typedef int64x2_t __m128i; /* 128-bit vector containing integers */
+#endif
 
 /* type-safe casting between types */
 
@@ -6696,7 +6705,7 @@ FORCE_INLINE __m128i _mm_aesenc_si128(__m128i EncBlock, __m128i RoundKey)
     w ^= vqtbl1q_u8(v ^ w, vld1q_u8(ror32by8));
 
     //  add round key
-    return vreinterpretq_m128i_u8(w) ^ RoundKey;
+    return vreinterpretq_m128i_u8(w) ^ vreinterpretq_s64_u32(RoundKey);
 
 #else /* ARMv7-A NEON implementation */
 #define SSE2NEON_AES_B2W(b0, b1, b2, b3)                                       \

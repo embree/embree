@@ -393,8 +393,10 @@ namespace embree
 
     __forceinline Vec3fx( const Vec3fa& other, const int      a1) { m128 = other.m128; a = a1; }
     __forceinline Vec3fx( const Vec3fa& other, const unsigned a1) { m128 = other.m128; u = a1; }
-    __forceinline Vec3fx( const Vec3fa& other, const float    w1) {      
-#if defined (__SSE4_1__)
+    __forceinline Vec3fx( const Vec3fa& other, const float    w1) {
+#if defined (__aarch64__)
+      m128 = other.m128; m128[3] = w1;
+#elif defined (__SSE4_1__)
       m128 = _mm_insert_ps(other.m128, _mm_set_ss(w1),3 << 4);
 #else
       const vint4 mask(-1,-1,-1,0);
@@ -526,7 +528,7 @@ namespace embree
   __forceinline Vec3fx min( const Vec3fx& a, const Vec3fx& b ) { return _mm_min_ps(a.m128,b.m128); }
   __forceinline Vec3fx max( const Vec3fx& a, const Vec3fx& b ) { return _mm_max_ps(a.m128,b.m128); }
 
-#if defined(__SSE4_1__)
+#if defined(__SSE4_1__) || defined(__aarch64__)
     __forceinline Vec3fx mini(const Vec3fx& a, const Vec3fx& b) {
       const vint4 ai = _mm_castps_si128(a.m128);
       const vint4 bi = _mm_castps_si128(b.m128);
@@ -535,7 +537,7 @@ namespace embree
     }
 #endif
 
-#if defined(__SSE4_1__)
+#if defined(__SSE4_1__) || defined(__aarch64__)
     __forceinline Vec3fx maxi(const Vec3fx& a, const Vec3fx& b) {
       const vint4 ai = _mm_castps_si128(a.m128);
       const vint4 bi = _mm_castps_si128(b.m128);

@@ -388,7 +388,7 @@ namespace embree
         intersectorN.occluded(this,rayN,N,context);
       }
       
-#if defined(__SSE__)
+#if defined(__SSE__) || defined(__ARM_NEON)
       __forceinline void occluded(const vbool4& valid, RayK<4>& ray, IntersectContext* context) {
         const vint<4> mask = valid.mask32();
         occluded4(&mask,(RTCRay4&)ray,context);

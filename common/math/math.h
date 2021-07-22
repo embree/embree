@@ -10,6 +10,9 @@
 
 #if defined(__ARM_NEON)
 #include "../simd/arm/emulation.h"
+ #if defined(NEON_AVX2_EMULATION)
+ #include "../simd/arm/AVX2NEON.h"
+ #endif
 #else
 #include <emmintrin.h>
 #include <xmmintrin.h>
@@ -69,16 +72,56 @@ namespace embree
   }
 
   __forceinline float signmsk ( const float x ) {
+#if defined(__aarch64__)
+      // FP and Neon shares same vector register in arm64
+      __m128 a;
+      __m128i b;
+      a[0] = x;
+      b[0] = 0x80000000;
+      a = _mm_and_ps(a, vreinterpretq_f32_s32(b));
+      return a[0];
+#else
     return _mm_cvtss_f32(_mm_and_ps(_mm_set_ss(x),_mm_castsi128_ps(_mm_set1_epi32(0x80000000))));
+#endif
   }
   __forceinline float xorf( const float x, const float y ) {
+#if defined(__aarch64__)
+      // FP and Neon shares same vector register in arm64
+      __m128 a;
+      __m128 b;
+      a[0] = x;
+      b[0] = y;
+      a = _mm_xor_ps(a, b);
+      return a[0];
+#else
     return _mm_cvtss_f32(_mm_xor_ps(_mm_set_ss(x),_mm_set_ss(y)));
+#endif
   }
   __forceinline float andf( const float x, const unsigned y ) {
+#if defined(__aarch64__) 
+      // FP and Neon shares same vector register in arm64
+      __m128 a;
+      __m128i b;
+      a[0] = x;
+      b[0] = y;
+      a = _mm_and_ps(a, vreinterpretq_f32_s32(b));
+      return a[0];
+#else
     return _mm_cvtss_f32(_mm_and_ps(_mm_set_ss(x),_mm_castsi128_ps(_mm_set1_epi32(y))));
+#endif
   }
   __forceinline float rsqrt( const float x )
   {
+#if defined(__aarch64__)
+      // FP and Neon shares same vector register in arm64
+      __m128 a;
+      a[0] = x;
+      __m128 value = _mm_rsqrt_ps(a);
+      value = vmulq_f32(value, vrsqrtsq_f32(vmulq_f32(a, value), value));
+      value = vmulq_f32(value, vrsqrtsq_f32(vmulq_f32(a, value), value));
+      return value[0];
+#else
+
     const __m128 a = _mm_set_ss(x);
 #if defined(__AVX512VL__)
     __m128 r = _mm_rsqrt14_ss(_mm_set_ss(0.0f),a);
@@ -90,6 +133,7 @@ namespace embree
     r = _mm_add_ss(_mm_mul_ss(_mm_set_ss(1.5f), r), _mm_mul_ss(_mm_mul_ss(_mm_mul_ss(a, _mm_set_ss(-0.5f)), r), _mm_mul_ss(r, r)));
 #endif
     return _mm_cvtss_f32(r);
+#endif //defined(__aarch64__)
   }
 
 #if defined(__WIN32__) && defined(_MSC_VER) && (_MSC_VER <= 1700)
@@ -326,7 +370,7 @@ namespace embree
     return x | (y << 1) | (z << 2);
   }
 
-#if defined(__AVX2__)
+#if defined(__AVX2__) && !defined(__aarch64__)
 
   template<>
     __forceinline unsigned int bitInterleave(const unsigned int &xi, const unsigned int& yi, const unsigned int& zi)

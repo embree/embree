@@ -194,4 +194,33 @@ namespace embree
   };
 
   extern MAYBE_UNUSED UndefinedTy undefined;
+
+#if defined(__aarch64__)
+  extern const uint32x4_t movemask_mask;
+  extern const uint32x4_t vzero;
+  extern const uint32x4_t v0x80000000;
+  extern const uint32x4_t v0x7fffffff;
+  extern const uint32x4_t v000F;
+  extern const uint32x4_t v00F0;
+  extern const uint32x4_t v00FF;
+  extern const uint32x4_t v0F00;
+  extern const uint32x4_t v0F0F;
+  extern const uint32x4_t v0FF0;
+  extern const uint32x4_t v0FFF;
+  extern const uint32x4_t vF000;
+  extern const uint32x4_t vF00F;
+  extern const uint32x4_t vF0F0;
+  extern const uint32x4_t vF0FF;
+  extern const uint32x4_t vFF00;
+  extern const uint32x4_t vFF0F;
+  extern const uint32x4_t vFFF0;
+  extern const uint32x4_t vFFFF;
+  extern const uint8x16_t v0022;
+  extern const uint8x16_t v1133;
+  extern const uint8x16_t v0101;
+  extern const float32x4_t vOne;
+  extern const float32x4_t vmOne;
+  extern const float32x4_t vInf;
+  extern const float32x4_t vmInf;
+#endif
 }
