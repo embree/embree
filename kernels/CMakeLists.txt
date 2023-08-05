@@ -350,7 +350,7 @@ target_include_directories(embree PUBLIC
 # libtbb is located in same install folder as libembree
 IF(WIN32)
 ELSEIF(APPLE)
-  SET_TARGET_PROPERTIES(embree PROPERTIES INSTALL_RPATH "@rpath") # On MacOSX the app is supposed to already have an rpath set to that folder
+  SET_TARGET_PROPERTIES(embree PROPERTIES INSTALL_RPATH "@loader_path") # On MacOSX we tell dyld to find libtbb in the folder libembree is placed.
 ELSE()
   SET_TARGET_PROPERTIES(embree PROPERTIES INSTALL_RPATH "$ORIGIN")  # Linux we tell ld to find libtbb in the folder libembree is placed.
 ENDIF()
