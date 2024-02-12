@@ -237,6 +237,13 @@ INSTALL(FILES "${PROJECT_BINARY_DIR}/embree-config-install.cmake" DESTINATION "$
 INSTALL(FILES "${PROJECT_BINARY_DIR}/embree-config-version.cmake" DESTINATION "${EMBREE_CMAKECONFIG_DIR}" COMPONENT devel)
 
 ##############################################################
+# Generate and Install Embree Pkgconfig
+##############################################################
+
+configure_file (common/cmake/embree.pc.cmake ${PROJECT_BINARY_DIR}//embree.pc @ONLY)
+install (FILES ${PROJECT_BINARY_DIR}/embree.pc DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig")
+
+##############################################################
 # CPack specific stuff
 ##############################################################
 
